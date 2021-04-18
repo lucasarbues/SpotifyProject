@@ -1,0 +1,104 @@
+<html>
+<head>
+<title>main.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #0033b3;}
+.s1 { color: #080808;}
+.s2 { color: #008080; font-weight: bold;}
+.s3 { color: #1750eb;}
+</style>
+</head>
+<body bgcolor="#ffffff">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+main.py</font>
+</center></td></tr></table>
+<pre><span class="s0">import </span><span class="s1">spotipy.util </span><span class="s0">as </span><span class="s1">util</span>
+<span class="s0">import </span><span class="s1">requests</span>
+<span class="s0">import </span><span class="s1">ast</span>
+<span class="s0">import </span><span class="s1">spotipy</span>
+<span class="s0">import </span><span class="s1">pandas </span><span class="s0">as </span><span class="s1">pd</span>
+
+<span class="s0">from </span><span class="s1">typing </span><span class="s0">import </span><span class="s1">List</span>
+<span class="s0">from </span><span class="s1">os </span><span class="s0">import </span><span class="s1">listdir</span>
+
+
+<span class="s0">def </span><span class="s1">get_streamings(path: str = </span><span class="s2">'MyData'</span><span class="s1">) -&gt; List[dict]:</span>
+    <span class="s1">files = [</span><span class="s2">'MyData/' </span><span class="s1">+ x </span><span class="s0">for </span><span class="s1">x </span><span class="s0">in </span><span class="s1">listdir(path)</span>
+             <span class="s0">if </span><span class="s1">x.split(</span><span class="s2">'.'</span><span class="s1">)[</span><span class="s3">0</span><span class="s1">][:-</span><span class="s3">1</span><span class="s1">] == </span><span class="s2">'StreamingHistory'</span><span class="s1">]</span>
+
+    <span class="s1">all_streamings = []</span>
+
+    <span class="s0">for </span><span class="s1">file </span><span class="s0">in </span><span class="s1">files:</span>
+        <span class="s0">with </span><span class="s1">open(file, </span><span class="s2">'r'</span><span class="s1">, encoding=</span><span class="s2">'UTF-8'</span><span class="s1">) </span><span class="s0">as </span><span class="s1">f:</span>
+            <span class="s1">new_streamings = ast.literal_eval(f.read())</span>
+            <span class="s1">all_streamings += [streaming </span><span class="s0">for </span><span class="s1">streaming</span>
+                               <span class="s0">in </span><span class="s1">new_streamings]</span>
+    <span class="s0">return </span><span class="s1">all_streamings</span>
+
+<span class="s1">username = </span><span class="s2">'lucasarbues76'</span>
+<span class="s1">client_id =</span><span class="s2">'7ae54aa7e2c0462bb2fce08dca1695cc'</span>
+<span class="s1">client_secret = </span><span class="s2">'17bd5d6ef45e4b80a8b1eb57d7917a1e'</span>
+<span class="s1">redirect_uri = </span><span class="s2">'http://localhost:7777/callback.'</span>
+<span class="s1">scope = </span><span class="s2">'user-read-recently-played'</span>
+
+<span class="s1">token = util.prompt_for_user_token(username=username,</span>
+                                   <span class="s1">scope=scope,</span>
+                                   <span class="s1">client_id=client_id,</span>
+                                   <span class="s1">client_secret=client_secret,</span>
+                                   <span class="s1">redirect_uri=redirect_uri)</span>
+
+
+<span class="s0">def </span><span class="s1">get_id(track_name: str, token: str) -&gt; str:</span>
+    <span class="s1">headers = {</span>
+        <span class="s2">'Accept'</span><span class="s1">: </span><span class="s2">'application/json'</span><span class="s1">,</span>
+        <span class="s2">'Content-Type'</span><span class="s1">: </span><span class="s2">'application/json'</span><span class="s1">,</span>
+        <span class="s2">'Authorization'</span><span class="s1">: </span><span class="s2">f'Bearer ' </span><span class="s1">+ token,</span>
+    <span class="s1">}</span>
+
+
+    <span class="s1">params = [</span>
+    <span class="s1">(</span><span class="s2">'q'</span><span class="s1">, track_name),</span>
+    <span class="s1">(</span><span class="s2">'type'</span><span class="s1">, </span><span class="s2">'track'</span><span class="s1">),</span>
+    <span class="s1">]</span>
+    <span class="s0">try</span><span class="s1">:</span>
+        <span class="s1">response = requests.get(</span><span class="s2">'https://api.spotify.com/v1/search'</span><span class="s1">,</span>
+                            <span class="s1">headers=headers, params=params, timeout=</span><span class="s3">5</span><span class="s1">)</span>
+        <span class="s1">json = response.json()</span>
+        <span class="s1">first_result = json[</span><span class="s2">'tracks'</span><span class="s1">][</span><span class="s2">'items'</span><span class="s1">][</span><span class="s3">0</span><span class="s1">]</span>
+        <span class="s1">track_id = first_result[</span><span class="s2">'id'</span><span class="s1">]</span>
+        <span class="s0">return </span><span class="s1">track_id</span>
+    <span class="s0">except</span><span class="s1">:</span>
+        <span class="s0">return None</span>
+
+
+<span class="s0">def </span><span class="s1">get_features(track_id: str, token: str) -&gt; dict:</span>
+    <span class="s1">sp = spotipy.Spotify(auth=token)</span>
+    <span class="s0">try</span><span class="s1">:</span>
+        <span class="s1">features = sp.audio_features([track_id])</span>
+        <span class="s0">return </span><span class="s1">features[</span><span class="s3">0</span><span class="s1">]</span>
+    <span class="s0">except</span><span class="s1">:</span>
+        <span class="s0">return None</span>
+
+<span class="s1">streamings = get_streamings()</span>
+<span class="s1">unique_tracks = list(set([streaming[</span><span class="s2">'trackName'</span><span class="s1">]</span>
+                          <span class="s0">for </span><span class="s1">streaming </span><span class="s0">in </span><span class="s1">streamings]))</span>
+
+<span class="s1">all_features = {}</span>
+<span class="s0">for </span><span class="s1">track </span><span class="s0">in </span><span class="s1">unique_tracks:</span>
+    <span class="s1">track_id = get_id(track, token)</span>
+    <span class="s1">features = get_features(track_id, token)</span>
+    <span class="s0">if </span><span class="s1">features:</span>
+        <span class="s1">all_features[track] = features</span>
+
+<span class="s1">with_features = []</span>
+<span class="s0">for </span><span class="s1">track_name, features </span><span class="s0">in </span><span class="s1">all_features.items():</span>
+    <span class="s1">with_features.append({</span><span class="s2">'name'</span><span class="s1">: track_name, **features})</span>
+
+<span class="s1">df = pd.DataFrame(with_features)</span>
+<span class="s1">df.to_csv(</span><span class="s2">'streaming_history.csv'</span><span class="s1">)</span>
+</pre>
+</body>
+</html>
